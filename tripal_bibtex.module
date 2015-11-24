@@ -1,0 +1,144 @@
+<?php
+
+/**
+ * @ file
+ * Prodives the main functionality for this module.
+ */
+ 
+/**
+ * Import publications from a bibtex formatted file.
+ */
+ function tripal_bibtex_import_bibtex($filename, $options = array()) {
+  print 'Filename: ' . $filename."\n";
+  
+  $in = fopen($filename, 'r');
+  if ($in) {
+    $record = array();
+    while (($line = fgets($in)) !== false) {
+    
+      // Check if we are starting a new record.
+      if (preg_match('/@(\w+){/', $line, $matches)) {
+        $ptype = ($matches[1] == 'article') ? 'Journal Article' : $matches[1];
+      
+        if (sizeof($record) > 1) {
+          tripal_bibtext_import_publication($record);
+        }
+             
+        // Start the new record.
+        $record = array(
+          'Publication Type' => array(ucwords($ptype))
+        );
+      }
+      // Otherwise check which type of line we are on.
+      // Bibtex format consists of tag = {value}
+      // This is made slightly more complicated by the fact that value 
+      // can span multiple lines.
+      // First; Simple Case: All on one line
+      elseif (preg_match('/^(\w+) = {(.*)}/', $line, $matches)) {
+        $current_tag = ucwords($matches[1]);
+        $record[$current_tag] = $matches[2];
+        
+        $current_tag = NULL;
+        $record_ended = TRUE;
+      }
+      // Next up: the tag is starting.
+      elseif (preg_match('/^(\w+) = {(.*)/', $line, $matches)) {
+        $current_tag = ucwords($matches[1]);
+        $record[$current_tag] = $matches[2];
+        
+        $record_ended = FALSE;
+      }
+      // The tag is ending.
+      elseif (preg_match('/(.*)}/', $line, $matches) AND $current_tag) {
+        $record[$current_tag] .= $matches[1];
+        
+        $current_tag = NULL;
+        $record_ended = TRUE;
+      }
+      // We are in the middle of a multi-line tag.
+      elseif ($record_ended == FALSE AND $current_tag) {
+        $record[$current_tag] .= $line;
+      }
+    }
+    
+    // Last record.
+    if (sizeof($record) > 1) {
+      tripal_bibtext_import_publication($record);
+    }
+    
+    // Finally, sync publications & contacts.
+    chado_node_sync_records('pub');
+    chado_node_sync_records('contact');
+    
+  }
+  else {
+    print "ERROR: Unable to open file\n";
+  }
+}
+
+/**
+ * Clean-up a bibtext pub array and insert it into chado using the tripal api.
+ */
+function tripal_bibtext_import_publication($record) {
+
+  // Clean-up Record to match expectations.
+  // Key Expectations:
+  // Publication Type: an array of publication types. a publication can have more than one type
+  // Authors: a string containing all of the authors of a publication
+  // Journal Name: a string containing the journal name
+  // Journal Abbreviation: a string containing the journal name abbreviation
+  // Series Name: a string containing the series (e.g. conference proceedings) name
+  // Series Abbreviation: a string containing the series name abbreviation
+  // Volume: the serives volume number
+  // Issue: the series issue number
+  // Pages: the page numbers for the publication
+  // Publication Date: A date in the
+  if (isset($record['Journal'])) $record['Journal Name'] = $record['Journal']; unset($record['Journal']);
+  if (isset($record['Author'])) $record['Authors'] = $record['Author']; unset($record['Author']);
+  if (preg_match('/(.*)\.$/', $record['Title'], $matches)) $record['Title'] = $matches[1];
+
+  // Process the Authors.
+  // The main goal is to process the bibtex format into the array that tripal_pub_add_authors() requires.
+  // Additionally, the bibtex author list is ugly so we would like to re-format that based
+  // on the format of each author name.
+  $first_is_inital = array();
+  $record['Author List'] = explode(' and ', $record['Authors']);
+  foreach ($record['Author List'] as $k => $author) {
+    $author = explode(', ', $author);
+    $record['Author List'][$k] = array(
+      'Surname' => $author[0],
+      'Given Name' => $author[1]
+    );
+    
+    // Check if the first name is condensed into initals.
+    if (preg_match('/^[A-Z]+$/',$author[1])) {
+      $first_is_inital[] = $k;
+    }
+  }
+  // Now if all the authors are first initial formatted then remove comma's between name
+  // name parts and replace ands with comma's
+  // ie: "Sanderson, LA and Bett, KE and Caron, C" becomes "Sanderson LA, Bett KE, Caron C"
+  if (sizeof($first_is_inital) == sizeof($record['Author List'])) {
+    $record['Authors'] = str_replace(',', '', $record['Authors']);
+    $record['Authors'] = str_replace(' and ', ', ', $record['Authors']);
+  }
+  // Otherwise, just replace ands with semi-colons.
+  else {
+    $record['Authors'] = str_replace(' and ', '; ', $record['Authors']);
+  }
+  
+  // Add Citation.
+  $record['Citation'] = tripal_pub_create_citation($record);
+
+  // Finally, the Tripal pub check for duplicate record doesn't seem to be working for
+  // me. Thus check manually here.
+  // @TODO: Investigate why Tripal pub's check is not working for me.
+  // I'm just going to check title & year.
+  $pub_id = chado_query('SELECT pub_id FROM {pub} WHERE title=:title AND pyear=:year',
+    array(':title' => $record['Title'], ':year' => $record['Year']))->fetchField();
+  if (!$pub_id) {
+    $action = NULL;
+    $pub_id = tripal_pub_add_publication($record, $action, TRUE);
+  }
+          
+}
