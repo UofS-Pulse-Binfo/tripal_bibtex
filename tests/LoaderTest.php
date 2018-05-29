@@ -15,7 +15,12 @@ class LoaderTest extends TripalTestCase {
     $result = $query->execute()->FetchAll();
     $this->assertNotEmpty($result);
 
+
+
   }
+
+  //TODO: TEST TO ASSERT THE ENTITY IS PRESENT
+
   public function testLoaderFunctionalityWhiteSpace(){
 
   //  tripal_bibtex_import_bibtex('example/example.bib');
