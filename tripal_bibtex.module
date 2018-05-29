@@ -1,10 +1,5 @@
 <?php
-
-
-//module_load_include('inc', 'tripal_chado', 'tripal_chado.pub_importers');
-
-//module_load_include('inc', 'tripal_chado', 'loaders/tripal_chado.pub_importers');
-require_once (DRUPAL_ROOT . '/sites/all/modules/tripal/tripal_chado/includes/loaders/tripal_chado.pub_importers.inc' );
+module_load_include('inc', 'tripal_chado', 'includes/loaders/tripal_chado.pub_importers');
 /**
  * @ file
  * Provides the main functionality for this module.
@@ -39,7 +34,7 @@ function tripal_bibtex_import_bibtex($filename, $options = []) {
       // This is made slightly more complicated by the fact that value 
       // can span multiple lines.
       // First; Simple Case: All on one line
-     // elseif (preg_match('/^(\w+) = {(.*)}/', $line, $matches)) {
+      // elseif (preg_match('/^(\w+) = {(.*)}/', $line, $matches)) {
       elseif (preg_match('/(.*) = {(.*)}/', $line, $matches)) {
 
         $current_tag = ucwords($matches[1]);
@@ -71,25 +66,25 @@ function tripal_bibtex_import_bibtex($filename, $options = []) {
       else {
         print("worst case");
       }
-      }
     }
+  }
 
-    // Last record.
-    if (sizeof($record) > 1) {
-      tripal_bibtext_import_publication($record);
-    }
+  // Last record.
+  if (sizeof($record) > 1) {
+    tripal_bibtext_import_publication($record);
+  }
 
-    // Finally, sync publications & contacts.
+  // Finally, sync publications & contacts.
 
-    $pub_bundle = tripal_bibtex_get_chado_table_bundle('pub');
-    $contact_bundle = tripal_bibtex_get_chado_table_bundle('contact');
-    if ($pub_bundle) {
-      chado_publish_records(['bundle_name' => $pub_bundle]);
+  $pub_bundle = tripal_bibtex_get_chado_table_bundle('pub');
+  $contact_bundle = tripal_bibtex_get_chado_table_bundle('contact');
+  if ($pub_bundle) {
+    chado_publish_records(['bundle_name' => $pub_bundle]);
 
-    }
-    if ($contact_bundle) {
-      chado_publish_records(['bundle_name' => $contact_bundle]);
-    }
+  }
+  if ($contact_bundle) {
+    chado_publish_records(['bundle_name' => $contact_bundle]);
+  }
 
   else {
     print "ERROR: Unable to open file\n";
@@ -157,7 +152,7 @@ function tripal_bibtext_import_publication($record) {
   }
 
   // Add Citation.
-  $record['Citation'] = tripal_pub_create_citation($record);
+  $record['Citation'] = chado_pub_create_citation($record);
 
   // Finally, the Tripal pub check for duplicate record doesn't seem to be working for
   // me. Thus check manually here.
@@ -167,7 +162,6 @@ function tripal_bibtext_import_publication($record) {
     [':title' => $record['Title'], ':year' => $record['Year']])->fetchField();
   if (!$pub_id) {
     $action = NULL;
-    var_dump($record);
     $pub_id = tripal_pub_add_publication($record, $action, TRUE);
   }
 
