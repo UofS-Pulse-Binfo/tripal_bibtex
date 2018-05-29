@@ -9,6 +9,12 @@ class LoaderTest extends TripalTestCase {
 
   public function testLoadFOneThousandStyleBibTex(){
 
+    $query=  db_select('chado.pub', 'p')->fields('p', ['title', 'type_id'])->condition('title', 'NO WHITE SPACE');//title from the example file
+    $result = $query->execute()->FetchAll();
+
+    if ($result){
+      print("Warning: the test file has already been loaded.\n");
+    }
     tripal_bibtex_import_bibtex('example/no_ws_example.bib');
 
     $query=  db_select('chado.pub', 'p')->fields('p', ['title', 'type_id'])->condition('title', 'NO WHITE SPACE');//title from the example file
