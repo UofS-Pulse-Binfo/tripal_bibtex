@@ -8,15 +8,15 @@
 /**
  * Import publications from a bibtex formatted file.
  */
- function tripal_bibtex_import_bibtex($filename, $options = array()) {
-  print 'Filename: ' . $filename."\n";
+function tripal_bibtex_import_bibtex($filename, $options = []) {
+  print 'Filename: ' . $filename . "\n";
 
   $in = fopen($filename, 'r');
   if ($in) {
-    $record = array();
-    while (($line = fgets($in)) !== false) {
-
+    $record = [];
+    while (($line = fgets($in)) !== FALSE) {
       // Check if we are starting a new record.
+
       if (preg_match('/@(\w+){/', $line, $matches)) {
         $ptype = ($matches[1] == 'article') ? 'Journal Article' : $matches[1];
 
@@ -25,9 +25,9 @@
         }
 
         // Start the new record.
-        $record = array(
-          'Publication Type' => array(ucwords($ptype))
-        );
+        $record = [
+          'Publication Type' => [ucwords($ptype)],
+        ];
       }
       // Otherwise check which type of line we are on.
       // Bibtex format consists of tag = {value}
@@ -43,6 +43,7 @@
       }
       // Next up: the tag is starting.
       elseif (preg_match('/^(\w+) = {(.*)/', $line, $matches)) {
+
         $current_tag = ucwords($matches[1]);
         $record[$current_tag] = $matches[2];
 
@@ -50,6 +51,7 @@
       }
       // The tag is ending.
       elseif (preg_match('/(.*)}/', $line, $matches) AND $current_tag) {
+
         $record[$current_tag] .= $matches[1];
 
         $current_tag = NULL;
@@ -58,6 +60,10 @@
       // We are in the middle of a multi-line tag.
       elseif ($record_ended == FALSE AND $current_tag) {
         $record[$current_tag] .= $line;
+      }
+      else {
+        print("worst case");
+      }
       }
     }
 
@@ -70,13 +76,14 @@
 
     $pub_bundle = tripal_bibtex_get_chado_table_bundle('pub');
     $contact_bundle = tripal_bibtex_get_chado_table_bundle('contact');
+    if ($pub_bundle) {
+      chado_publish_records(['bundle_name' => $pub_bundle]);
 
-    tripal_chado_publish_records(['bundle_name' => $pub_bundle]);
-    tripal_chado_publish_records(['bundle_name' => $contact_bundle]);
+    }
+    if ($contact_bundle) {
+      chado_publish_records(['bundle_name' => $contact_bundle]);
+    }
 
-
-
-  }
   else {
     print "ERROR: Unable to open file\n";
   }
@@ -99,25 +106,34 @@ function tripal_bibtext_import_publication($record) {
   // Issue: the series issue number
   // Pages: the page numbers for the publication
   // Publication Date: A date in the
-  if (isset($record['Journal'])) $record['Journal Name'] = $record['Journal']; unset($record['Journal']);
-  if (isset($record['Author'])) $record['Authors'] = $record['Author']; unset($record['Author']);
-  if (preg_match('/(.*)\.$/', $record['Title'], $matches)) $record['Title'] = $matches[1];
+
+  if (isset($record['Journal'])) {
+    $record['Journal Name'] = $record['Journal'];
+  }
+  unset($record['Journal']);
+  if (isset($record['Author'])) {
+    $record['Authors'] = $record['Author'];
+  }
+  unset($record['Author']);
+  if (preg_match('/(.*)\.$/', $record['Title'], $matches)) {
+    $record['Title'] = $matches[1];
+  }
 
   // Process the Authors.
   // The main goal is to process the bibtex format into the array that tripal_pub_add_authors() requires.
   // Additionally, the bibtex author list is ugly so we would like to re-format that based
   // on the format of each author name.
-  $first_is_inital = array();
+  $first_is_inital = [];
   $record['Author List'] = explode(' and ', $record['Authors']);
   foreach ($record['Author List'] as $k => $author) {
     $author = explode(', ', $author);
-    $record['Author List'][$k] = array(
+    $record['Author List'][$k] = [
       'Surname' => $author[0],
-      'Given Name' => $author[1]
-    );
+      'Given Name' => $author[1],
+    ];
 
     // Check if the first name is condensed into initals.
-    if (preg_match('/^[A-Z]+$/',$author[1])) {
+    if (preg_match('/^[A-Z]+$/', $author[1])) {
       $first_is_inital[] = $k;
     }
   }
@@ -141,7 +157,7 @@ function tripal_bibtext_import_publication($record) {
   // @TODO: Investigate why Tripal pub's check is not working for me.
   // I'm just going to check title & year.
   $pub_id = chado_query('SELECT pub_id FROM {pub} WHERE title=:title AND pyear=:year',
-    array(':title' => $record['Title'], ':year' => $record['Year']))->fetchField();
+    [':title' => $record['Title'], ':year' => $record['Year']])->fetchField();
   if (!$pub_id) {
     $action = NULL;
     $pub_id = tripal_pub_add_publication($record, $action, TRUE);
@@ -149,11 +165,14 @@ function tripal_bibtext_import_publication($record) {
 
 }
 
-function tripal_bibtex_get_chado_table_bundle($table_name){
+function tripal_bibtex_get_chado_table_bundle($table_name) {
 
-  $query = db_query('public.chado_bundle', 'cb');
-  $query->fields('cb', 'bundle_id');
+  $query = db_select('public.chado_bundle', 'cb');
+  $query->fields('cb', ['bundle_id']);
   $query->condition('data_table', $table_name);
   $id = $query->execute()->fetchField();
+  if (!$id) {
+    return FALSE;
+  }
   return 'bio_data_' . $id;
 }
