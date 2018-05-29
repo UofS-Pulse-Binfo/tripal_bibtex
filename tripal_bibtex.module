@@ -1,5 +1,10 @@
 <?php
 
+
+//module_load_include('inc', 'tripal_chado', 'tripal_chado.pub_importers');
+
+//module_load_include('inc', 'tripal_chado', 'loaders/tripal_chado.pub_importers');
+require_once (DRUPAL_ROOT . '/sites/all/modules/tripal/tripal_chado/includes/loaders/tripal_chado.pub_importers.inc' );
 /**
  * @ file
  * Provides the main functionality for this module.
@@ -34,7 +39,9 @@ function tripal_bibtex_import_bibtex($filename, $options = []) {
       // This is made slightly more complicated by the fact that value 
       // can span multiple lines.
       // First; Simple Case: All on one line
-      elseif (preg_match('/^(\w+) = {(.*)}/', $line, $matches)) {
+     // elseif (preg_match('/^(\w+) = {(.*)}/', $line, $matches)) {
+      elseif (preg_match('/(.*) = {(.*)}/', $line, $matches)) {
+
         $current_tag = ucwords($matches[1]);
         $record[$current_tag] = $matches[2];
 
@@ -42,7 +49,7 @@ function tripal_bibtex_import_bibtex($filename, $options = []) {
         $record_ended = TRUE;
       }
       // Next up: the tag is starting.
-      elseif (preg_match('/^(\w+) = {(.*)/', $line, $matches)) {
+      elseif (preg_match('/(.*) = {(.*)/', $line, $matches)) {
 
         $current_tag = ucwords($matches[1]);
         $record[$current_tag] = $matches[2];
@@ -160,6 +167,7 @@ function tripal_bibtext_import_publication($record) {
     [':title' => $record['Title'], ':year' => $record['Year']])->fetchField();
   if (!$pub_id) {
     $action = NULL;
+    var_dump($record);
     $pub_id = tripal_pub_add_publication($record, $action, TRUE);
   }
 
