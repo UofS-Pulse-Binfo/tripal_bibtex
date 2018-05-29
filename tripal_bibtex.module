@@ -2,28 +2,28 @@
 
 /**
  * @ file
- * Prodives the main functionality for this module.
+ * Provides the main functionality for this module.
  */
- 
+
 /**
  * Import publications from a bibtex formatted file.
  */
  function tripal_bibtex_import_bibtex($filename, $options = array()) {
   print 'Filename: ' . $filename."\n";
-  
+
   $in = fopen($filename, 'r');
   if ($in) {
     $record = array();
     while (($line = fgets($in)) !== false) {
-    
+
       // Check if we are starting a new record.
       if (preg_match('/@(\w+){/', $line, $matches)) {
         $ptype = ($matches[1] == 'article') ? 'Journal Article' : $matches[1];
-      
+
         if (sizeof($record) > 1) {
           tripal_bibtext_import_publication($record);
         }
-             
+
         // Start the new record.
         $record = array(
           'Publication Type' => array(ucwords($ptype))
@@ -37,7 +37,7 @@
       elseif (preg_match('/^(\w+) = {(.*)}/', $line, $matches)) {
         $current_tag = ucwords($matches[1]);
         $record[$current_tag] = $matches[2];
-        
+
         $current_tag = NULL;
         $record_ended = TRUE;
       }
@@ -45,13 +45,13 @@
       elseif (preg_match('/^(\w+) = {(.*)/', $line, $matches)) {
         $current_tag = ucwords($matches[1]);
         $record[$current_tag] = $matches[2];
-        
+
         $record_ended = FALSE;
       }
       // The tag is ending.
       elseif (preg_match('/(.*)}/', $line, $matches) AND $current_tag) {
         $record[$current_tag] .= $matches[1];
-        
+
         $current_tag = NULL;
         $record_ended = TRUE;
       }
@@ -60,16 +60,22 @@
         $record[$current_tag] .= $line;
       }
     }
-    
+
     // Last record.
     if (sizeof($record) > 1) {
       tripal_bibtext_import_publication($record);
     }
-    
+
     // Finally, sync publications & contacts.
-    chado_node_sync_records('pub');
-    chado_node_sync_records('contact');
-    
+
+    $pub_bundle = tripal_bibtex_get_chado_table_bundle('pub');
+    $contact_bundle = tripal_bibtex_get_chado_table_bundle('contact');
+
+    tripal_chado_publish_records(['bundle_name' => $pub_bundle]);
+    tripal_chado_publish_records(['bundle_name' => $contact_bundle]);
+
+
+
   }
   else {
     print "ERROR: Unable to open file\n";
@@ -109,7 +115,7 @@ function tripal_bibtext_import_publication($record) {
       'Surname' => $author[0],
       'Given Name' => $author[1]
     );
-    
+
     // Check if the first name is condensed into initals.
     if (preg_match('/^[A-Z]+$/',$author[1])) {
       $first_is_inital[] = $k;
@@ -126,7 +132,7 @@ function tripal_bibtext_import_publication($record) {
   else {
     $record['Authors'] = str_replace(' and ', '; ', $record['Authors']);
   }
-  
+
   // Add Citation.
   $record['Citation'] = tripal_pub_create_citation($record);
 
@@ -140,5 +146,14 @@ function tripal_bibtext_import_publication($record) {
     $action = NULL;
     $pub_id = tripal_pub_add_publication($record, $action, TRUE);
   }
-          
+
+}
+
+function tripal_bibtex_get_chado_table_bundle($table_name){
+
+  $query = db_query('public.chado_bundle', 'cb');
+  $query->fields('cb', 'bundle_id');
+  $query->condition('data_table', $table_name);
+  $id = $query->execute()->fetchField();
+  return 'bio_data_' . $id;
 }
