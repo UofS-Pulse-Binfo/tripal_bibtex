@@ -29,6 +29,12 @@ class BibtexImporter extends TripalImporter {
     'bib',
   ];
 
+  /**
+   * Allow, but dont require, an analysis.
+   */
+  public static $use_analysis = TRUE;
+
+  public static $require_analysis = FALSE;
 
   /**
    * Provides information to the user about the file upload.  Typically this
