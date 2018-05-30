@@ -1,5 +1,6 @@
 name = Tripal BibTex import
 description = Provides a Bibtex importer for tripal publications.
 core = 7.x
+version = 7.x-3.x
 package = Tripal Extensions
-dependencies[] = tripal_pub
+dependencies[] = tripal
