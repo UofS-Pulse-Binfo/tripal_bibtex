@@ -69,7 +69,7 @@ class BibtexImporter extends TripalImporter {
 
 
     $form['instructions'] = [
-    '#weight' => 100,
+      '#weight' => -100,
       '#markup' => '
 <h2>A BibTEX importer for Tripal Publications. </h2>
 <p>
@@ -80,7 +80,6 @@ This importer has not been tested with enough bibtex files to ensure it fully su
 test this module on a development site with your particular file before using it to import publications.</p>
 ',
     ];
-
 
     return $form;
   }
