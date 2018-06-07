@@ -6,7 +6,7 @@ class BibtexImporter extends TripalImporter {
    * The name of this loader.  This name will be presented to the site
    * user.
    */
-  public static $name = 'Chado bibtex Loader';
+  public static $name = 'Chado BibTeX Loader';
 
   /**
    * The machine name for this loader. This name will be used to construct
@@ -29,11 +29,7 @@ class BibtexImporter extends TripalImporter {
     'bib',
   ];
 
-  /**
-   * Allow, but dont require, an analysis.
-   */
-  public static $use_analysis = TRUE;
-
+  public static $use_analysis = FALSE;
   public static $require_analysis = FALSE;
 
   /**
@@ -73,6 +69,7 @@ class BibtexImporter extends TripalImporter {
 
 
     $form['instructions'] = [
+    '#weight' => 100,
       '#markup' => '
 <h2>A BibTEX importer for Tripal Publications. </h2>
 <p>
