@@ -19,7 +19,7 @@ function tripal_bibtex_import_bibtex($filename, $options = []) {
 
       // Check if we are starting a new record.
 
-      if (preg_match('/@(\w+){/', $line, $matches)) {
+      if (preg_match('/@(\w+)\s*{/', $line, $matches)) {
         $ptype = ($matches[1] == 'article' or $matches[1] == 'Article') ? 'Journal Article' : $matches[1];
 
         if (sizeof($record) > 1) {
@@ -37,7 +37,7 @@ function tripal_bibtex_import_bibtex($filename, $options = []) {
       // can span multiple lines.
       // First; Simple Case: All on one line
       // elseif (preg_match('/^(\w+) = ["{](.*)["}]/', $line, $matches)) {
-      elseif (preg_match('/(.*)\s*=\s*["{](.*)["}]/', $line, $matches)) {
+      elseif (preg_match('/\s*(.*?)\s*=\s*["{](.*)["}]/', $line, $matches)) {
 
         $current_tag = ucwords($matches[1]);
         $record[$current_tag] = $matches[2];
@@ -46,7 +46,7 @@ function tripal_bibtex_import_bibtex($filename, $options = []) {
         $record_ended = TRUE;
       }
       // Next up: the tag is starting.
-      elseif (preg_match('/(.*)\s*=\s*["{](.*)/', $line, $matches)) {
+      elseif (preg_match('/\s*(.*?)\s*=\s*["{](.*)/', $line, $matches)) {
 
         $current_tag = ucwords($matches[1]);
         $record[$current_tag] = $matches[2];
