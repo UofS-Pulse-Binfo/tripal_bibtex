@@ -45,6 +45,14 @@ function tripal_bibtex_import_bibtex($filename, $options = []) {
         $current_tag = NULL;
         $record_ended = TRUE;
       }
+      // Numeric values don't need to be in quotes or brackets:
+      elseif (preg_match('/\s*(.*?)\s*=\s*(\d+\.*\d*)/', $line, $matches)) {
+        $current_tag = ucwords($matches[1]);
+        $record[$current_tag] = $matches[2];
+
+        $current_tag = NULL;
+        $record_ended = TRUE;
+      }
       // Next up: the tag is starting.
       elseif (preg_match('/\s*(.*?)\s*=\s*["{](.*)/', $line, $matches)) {
 
@@ -125,6 +133,10 @@ function tripal_bibtext_import_publication($record) {
   unset($record['Author']);
   if (preg_match('/(.*)\.$/', $record['Title'], $matches)) {
     $record['Title'] = $matches[1];
+  }
+  if (isset($record['Note'])) {
+    $record['Notes'] = $record['Note'];
+    unset($record['Note']);
   }
 
   // Process the Authors.
