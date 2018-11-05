@@ -15,10 +15,12 @@ function tripal_bibtex_import_bibtex($filename, $options = []) {
   if ($in) {
     $record = [];
     while (($line = fgets($in)) !== FALSE) {
+      $line = trim($line);
+
       // Check if we are starting a new record.
 
-      if (preg_match('/@(\w+){/', $line, $matches)) {
-        $ptype = ($matches[1] == 'article') ? 'Journal Article' : $matches[1];
+      if (preg_match('/@(\w+)\s*{/', $line, $matches)) {
+        $ptype = ($matches[1] == 'article' or $matches[1] == 'Article') ? 'Journal Article' : $matches[1];
 
         if (sizeof($record) > 1) {
           tripal_bibtext_import_publication($record);
@@ -34,8 +36,8 @@ function tripal_bibtex_import_bibtex($filename, $options = []) {
       // This is made slightly more complicated by the fact that value 
       // can span multiple lines.
       // First; Simple Case: All on one line
-      // elseif (preg_match('/^(\w+) = {(.*)}/', $line, $matches)) {
-      elseif (preg_match('/(.*) = {(.*)}/', $line, $matches)) {
+      // elseif (preg_match('/^(\w+) = ["{](.*)["}]/', $line, $matches)) {
+      elseif (preg_match('/\s*(.*?)\s*=\s*["{](.*)["}]/', $line, $matches)) {
 
         $current_tag = ucwords($matches[1]);
         $record[$current_tag] = $matches[2];
@@ -43,8 +45,16 @@ function tripal_bibtex_import_bibtex($filename, $options = []) {
         $current_tag = NULL;
         $record_ended = TRUE;
       }
+      // Numeric values don't need to be in quotes or brackets:
+      elseif (preg_match('/\s*(.*?)\s*=\s*(\d+\.*\d*)/', $line, $matches)) {
+        $current_tag = ucwords($matches[1]);
+        $record[$current_tag] = $matches[2];
+
+        $current_tag = NULL;
+        $record_ended = TRUE;
+      }
       // Next up: the tag is starting.
-      elseif (preg_match('/(.*) = {(.*)/', $line, $matches)) {
+      elseif (preg_match('/\s*(.*?)\s*=\s*["{](.*)/', $line, $matches)) {
 
         $current_tag = ucwords($matches[1]);
         $record[$current_tag] = $matches[2];
@@ -63,8 +73,12 @@ function tripal_bibtex_import_bibtex($filename, $options = []) {
       elseif ($record_ended == FALSE AND $current_tag) {
         $record[$current_tag] .= $line;
       }
+      // if we hit the ending bracket of the stanza do nothing.
+      elseif (preg_match('/^\s*}\s*$/', $line) or preg_match('/^\s*$/', $line)) {
+         // do nothing.
+      }
       else {
-        print("worst case");
+        print("worst case: '$line'\n");
       }
     }
   }
@@ -86,9 +100,9 @@ function tripal_bibtex_import_bibtex($filename, $options = []) {
     chado_publish_records(['bundle_name' => $contact_bundle]);
   }
 
-  else {
-    print "ERROR: Unable to open file\n";
-  }
+  // else {
+  //   print "ERROR: Unable to open file\n";
+  // }
 }
 
 /**
@@ -119,6 +133,10 @@ function tripal_bibtext_import_publication($record) {
   unset($record['Author']);
   if (preg_match('/(.*)\.$/', $record['Title'], $matches)) {
     $record['Title'] = $matches[1];
+  }
+  if (isset($record['Note'])) {
+    $record['Notes'] = $record['Note'];
+    unset($record['Note']);
   }
 
   // Process the Authors.
