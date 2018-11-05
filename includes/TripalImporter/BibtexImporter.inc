@@ -24,8 +24,8 @@ class BibtexImporter extends TripalImporter {
    * An array containing the extensions of allowed file types.
    */
   public static $file_types = [
-    '.txt',
-    '.tex',
+    'txt',
+    'tex',
     'bib',
   ];
 
@@ -73,10 +73,10 @@ class BibtexImporter extends TripalImporter {
       '#markup' => '
 <h2>A BibTEX importer for Tripal Publications. </h2>
 <p>
-There are several known limitations for this importer.  Please see <a href ="https://github.com/UofS-Pulse-Binfo/tripal_bibtex">the github repo for this project</a> for a complete list.  
+There are several known limitations for this importer.  Please see <a href ="https://github.com/UofS-Pulse-Binfo/tripal_bibtex">the github repo for this project</a> for a complete list.
 </p>
 <p>
-This importer has not been tested with enough bibtex files to ensure it fully supports the specification. Thus please 
+This importer has not been tested with enough bibtex files to ensure it fully supports the specification. Thus please
 test this module on a development site with your particular file before using it to import publications.</p>
 ',
     ];
