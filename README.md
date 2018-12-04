@@ -14,3 +14,11 @@ A BibTEX importer for Tripal Publications. This module provides
 ## Documentation
 
 Please visit our [online documentation](https://tripal-bibtex.readthedocs.io/en/latest/) to learn more about installation, and usage.
+
+## License & Acknowledgements
+
+This module is open-source and licensed under GPLv3. [Read full license]().
+
+Author: Lacey-Anne Sanderson (@laceysanderson)
+
+_Copyright 2018 University of Saskatchewan_
