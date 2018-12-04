@@ -17,8 +17,6 @@ Please visit our [online documentation](https://tripal-bibtex.readthedocs.io/en/
 
 ## License & Acknowledgements
 
-This module is open-source and licensed under GPLv3. [Read full license]().
-
-Author: Lacey-Anne Sanderson (@laceysanderson)
+This module is open-source and licensed under GPLv3. [Read full license](https://github.com/UofS-Pulse-Binfo/tripal_bibtex/blob/7.x-3.x/LICENSE.txt).
 
 _Copyright 2018 University of Saskatchewan_
